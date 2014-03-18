@@ -452,35 +452,37 @@
 
 
 ;;;; queue from LOL
-(declaim (inline make-tlist tlist-left tlist-right tlist-empty-p tlist-add-left tlist-add-right tlist-rem-left))
+(eval-always
+ (declaim (inline tlist-left tlist-right tlist-empty-p tlist-add-left tlist-add-right tlist-rem-left))
 
-(defun make-tlist () 
-  (cons nil nil))
-(defun tlist-left (tl) (caar tl))
-(defun tlist-right (tl) (cadr tl))
-(defun tlist-empty-p (tl) (null (car tl)))
+ (defun make-tlist () 
+   (cons nil nil))
+ (defun tlist-left (tl) (caar tl))
+ (defun tlist-right (tl) (cadr tl))
+ (defun tlist-empty-p (tl) (null (car tl)))
 
-(defun tlist-add-left (tl it)
-  (let ((x (cons it (car tl))))
-    (if (tlist-empty-p tl)
-        (setf (cdr tl) x))
-    (setf (car tl) x)))
+ (defun tlist-add-left (tl it)
+   (let ((x (cons it (car tl))))
+     (if (tlist-empty-p tl)
+         (setf (cdr tl) x))
+     (setf (car tl) x)))
 
-(defun tlist-add-right (tl it)
-  (let ((x (cons it nil)))
-    (if (tlist-empty-p tl)
-        (setf (car tl) x)
-      (setf (cddr tl) x))
-    (setf (cdr tl) x)))
+ (defun tlist-add-right (tl it)
+   (let ((x (cons it nil)))
+     (if (tlist-empty-p tl)
+         (setf (car tl) x)
+       (setf (cddr tl) x))
+     (setf (cdr tl) x)))
 
-(defun tlist-rem-left (tl)
-  (if (tlist-empty-p tl)
-      (error "Remove from empty tlist")
-    (let ((x (car tl)))
-      (setf (car tl) (cdar tl))
-      (if (tlist-empty-p tl)
-          (setf (cdr tl) nil)) ;; For gc
-      (car x))))
+ (defun tlist-rem-left (tl)
+   (if (tlist-empty-p tl)
+       (error "Remove from empty tlist")
+     (let ((x (car tl)))
+       (setf (car tl) (cdar tl))
+       (if (tlist-empty-p tl)
+           (setf (cdr tl) nil)) ;; For gc
+       (car x))))
+ )
 
 ;; on lisp around setf
 (proclaim '(inline last1 single append1 conc1 mklist mkatom))
@@ -603,4 +605,46 @@
   (pop-maxrb rb t))
 (defun rb-upper-bound (key rb)
   (rb-lower-bound key rb t))
+
+;;;;;; directory
+;;(defun walk-dir (dir fn 
+;;                 &aux
+;;                 (tlist-of-dirs (make-tlist))
+;;                 )
+;;  (tlist-add-right tlist-of-dirs dir)
+;;
+;;  (loop
+;;    (let ((tgt (tlist-left tlist-of-dirs))
+;;          tgt-path)
+;;      (ef (not tgt)
+;;          (return)
+;;
+;;        ;; dequeue
+;;        (tlist-rem-left tlist-of-dirs)
+;;
+;;        (dolist (tgtfile (directory (merge-pathnames "*.*" tgt) :directories nil))
+;;          (funcall fn tgtfile))
+;;        (dolist (tgtfile (directory (merge-pathnames "*/" tgt)))
+;;          (funcall fn tgtfile)
+;;          (tlist-add-right tlist-of-dirs tgtfile))
+;;        ))))
+
+(defun walk-directory (dirname fn)
+  (dolist (file (directory (merge-pathnames "*.*" dirname) :directories nil))
+    (funcall fn file))
+  (dolist (file (directory (merge-pathnames "*/" dirname)))
+    (funcall fn file)
+    (walk-directory file fn)))
+
+;;;; log
+(defparameter file-log-path "/tmp/file-log.lisp")
+(defun file-log (&rest rest)
+  (with-open-file (os file-log-path :direction :output :if-does-not-exist :create :if-exists :append)
+    (multiple-value-bind (sec min hour day month year) (get-decoded-time)
+      (format os "(~d/~2,'0d/~2,'0d ~2,'0d:~2,'0d:~2,'0d " year month day hour min sec)
+      #+ccl(format os "(~a ~a) " (#_getpid) (ccl:process-serial-number ccl:*current-process*))
+      (apply #'format os rest)
+      (format os ")~%"))))
+
+
 

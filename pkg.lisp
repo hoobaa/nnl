@@ -24,7 +24,7 @@
 
    #:sec2internal-time-span
 
-   #:make-tlist 
+   #:make-tlist
    #:tlist-left #:tlist-right #:tlist-empty-p #:tlist-add-left #:tlist-add-right #:tlist-rem-left
 
    #:last1 #:single #:append1 #:conc1 #:mklist #:allf #:concf #:conc1f #:concnew #:mkatom
@@ -34,4 +34,7 @@
    #:split-if #:split
 
    #:makerb #:getrb #:remrb #:maxrb #:pop-maxrb #:rb-lower-bound #:minrb #:pop-minrb #:rb-upper-bound
+   #:walk-directory
+
+   #:file-log
    ))
